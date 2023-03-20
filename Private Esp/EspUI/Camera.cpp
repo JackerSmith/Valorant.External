@@ -118,18 +118,42 @@ void main() {
     return 0;
 }
 
-DWORD GetProcessIdByName(const wchar_t* processName) {
+DWORD GetProcessIdByName(const wchar_t* processName)
+{
     DWORD processId = 0;
+
+    // Create a snapshot of the system's process list
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (snapshot != INVALID_HANDLE_VALUE) {
-        PROCESSENTRY32 processEntry = {};
-        processEntry.dwSize = sizeof(processEntry);
-        if (Process32First(snapshot, &processEntry)) {
-            do {
-                if (_wcsicmp(processEntry.szExeFile, processName) == 0) {
-                    processId = processEntry.th32ProcessID;
-                    break;
-                }
+    if (snapshot == INVALID_HANDLE_VALUE) {
+        return processId;
+    }
+
+    // Initialize a PROCESSENTRY32 structure and set its dwSize member
+    PROCESSENTRY32 processEntry = {};
+    processEntry.dwSize = sizeof(processEntry);
+
+    // Loop through the process list and add matching process IDs to a vector
+    std::vector<DWORD> matchingIds;
+    if (Process32First(snapshot, &processEntry)) {
+        do {
+            if (_wcsicmp(processEntry.szExeFile, processName) == 0) {
+                matchingIds.push_back(processEntry.th32ProcessID);
+            }
+        } while (Process32Next(snapshot, &processEntry));
+    }
+
+    // Close the snapshot handle
+    CloseHandle(snapshot);
+
+    // If no matching process IDs were found, return 0
+    if (matchingIds.empty()) {
+        return processId;
+    }
+
+    // If there is only one matching process ID, return it
+    if (matchingIds.size() == 1) {
+        return matchingIds[0];
+   	 }
             } while (Process32Next(snapshot, &processEntry));
         }
         CloseHandle(snapshot);
