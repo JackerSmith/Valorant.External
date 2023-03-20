@@ -177,11 +177,15 @@ struct memory {
     bool strcat(const char *str) {
         int len = strlen(str);
         if (size + len >= capacity) return false;
-        strcpy(data + size, str), size += len;
+        std::copy(str, str + len, data + size);
+        size += len;
         return true;
     }
 
-    char *strstr(const char *str) { return std::strstr(data, str); }
+    char *strstr(const char *str) {
+        auto result = std::search(data, data + size, str, str + strlen(str));
+        return (result != data + size) ? result : nullptr;
+    }
 };
 
 
